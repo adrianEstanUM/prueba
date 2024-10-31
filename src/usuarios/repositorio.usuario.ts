@@ -1,31 +1,37 @@
 import { Repositorio } from 'src/core/repositorio';
-import { Usuario } from './entities/usuario.entity';
+import * as Domain from './domain';
+import * as Persistance from './entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UserMapper } from './usuarioMapper';
 
-export abstract class RepositorioUsuario extends Repositorio<Usuario> {}
+export abstract class RepositorioUsuario extends Repositorio<Persistance.Usuario> {}
 
 export class RepositorioUsuarioTypeORM extends RepositorioUsuario {
   constructor(
-    @InjectRepository(Usuario)
-    private repositorioUsuarios: Repository<Usuario>,
+    @InjectRepository(Persistance.Usuario)
+    private repositorioUsuarios: Repository<Persistance.Usuario>,
   ) {
     super();
   }
 
-  listar(): Promise<Usuario[]> {
-    return this.repositorioUsuarios.find();
+  listar(): Promise<Domain.Usuario[]> {
+    return this.repositorioUsuarios
+      .find()
+      .then((users) => users.map(UserMapper.toDomain));
   }
-  crear(item: Usuario): void {
-    this.repositorioUsuarios.save(item);
+  crear(item: Domain.Usuario): void {
+    this.repositorioUsuarios.save(UserMapper.toPersistance(item));
   }
-  actualizar(item: Usuario): void {
-    this.repositorioUsuarios.update(item.id, item);
+  actualizar(item: Domain.Usuario): void {
+    this.repositorioUsuarios.update(item.id, UserMapper.toPersistance(item));
   }
   eliminar(id: number): void {
     this.repositorioUsuarios.delete(id);
   }
-  obtener(id: number): Promise<Usuario> {
-    return this.repositorioUsuarios.findOneBy({ id });
+  obtener(id: number): Promise<Domain.Usuario> {
+    return this.repositorioUsuarios
+      .findOneBy({ id })
+      .then((user) => UserMapper.toDomain(user));
   }
 }
